@@ -1,107 +1,40 @@
-/*
- * Basic Arduino Template - Blink
- * ------------------------------
- * Blinks an LED connected to pin 13, once per second.
- *
- * Wiring: plug the LED straight into the top header of the UNO.
- *   - long leg  (+, anode)   -> pin 13
- *   - short leg (-, cathode) -> GND (right next to pin 13)
- *   (a 220 ohm resistor in series is the safer habit for LEDs)
- * The UNO's built-in "L" LED is also on pin 13, so it blinks too.
- *
- *              _____
- *             /     \
- *             | LED |
- *             |_____|
- *              |   |
- *          (-) |   | (+)
- *       short  |   |  long leg
- *   +----------|---|--------------------------------+
- *   |  AREF  GND  13   12   11   10    9    8      |
- *   |                                               |
- *   |  [USB]          ARDUINO UNO                   |
- *   |                                               |
- *   |  [PWR]                                        |
- *   +-----------------------------------------------+
- *
- * Every Arduino sketch has two required functions:
- *   setup() -> runs ONCE when the board powers on or is reset
- *   loop()  -> runs AGAIN AND AGAIN, forever, after setup() finishes
- *
- * In PlatformIO (unlike the Arduino IDE) we must include Arduino.h
- * ourselves. It gives us pinMode(), digitalWrite(), delay(), etc.
- */
 #include <Arduino.h>
+/*macro definitions of Rotary angle sensor and LED pin*/
 
-// ---------------------------------------------------------------------------
-// Global variables
-// Declared OUTSIDE any function, so setup(), loop() and any other
-// function can use them. Their values are kept between loop() runs.
-// ---------------------------------------------------------------------------
+#define ROTARY_ANGLE_SENSOR A0
+#define LED 3  //the Grove - LED is connected to PWM pin D3 of Arduino
+#define ADC_REF 5 //reference voltage of ADC is 5v.If the Vcc switch on the seeeduino
+                    //board switches to 3V3, the ADC_REF should be 3.3
+#define GROVE_VCC 5 //VCC of the grove interface is normally 5v
+#define FULL_ANGLE 300 //full value of the rotary angle is 300 degrees
 
-// The pin our LED is connected to. "const" means it can never change.
-const int ledPin = 13;
-
-// An "int" stores a whole number (no decimals), e.g. -3, 0, 500.
-// Here it holds how long the LED stays on/off, in milliseconds.
-int blinkDelay = 500;
-
-// A "bool" (boolean) stores only two values: true or false.
-// It remembers whether the LED should be on (true) or off (false).
-// We start with the LED off.
-bool ledIsOn = false;
-
-// ---------------------------------------------------------------------------
-// A dummy function
-// Functions let us give a name to a block of code and reuse it.
-//   void          -> this function does not return any value
-//   sayHello      -> the function's name
-//   ()            -> it takes no inputs (parameters)
-// It isn't needed for blinking - it's here to show how functions work.
-// ---------------------------------------------------------------------------
-void sayHello()
-{
-  Serial.println("Hello from sayHello()!");
-}
-
-// ---------------------------------------------------------------------------
-// setup(): runs once at the start
-// ---------------------------------------------------------------------------
 void setup()
 {
-  // Tell the board that ledPin is an OUTPUT (we send voltage out of it).
-  pinMode(ledPin, OUTPUT);
-
-  // Start serial communication at 9600 baud so we can print messages.
-  // Open the PlatformIO Serial Monitor to read them (speed must match:
-  // see monitor_speed in platformio.ini).
-  Serial.begin(9600);
-
-  // Call (use) our dummy function.
-  sayHello();
+    Serial.begin(9600);
+    pinMode(ROTARY_ANGLE_SENSOR, INPUT);
+    pinMode(LED,OUTPUT);   
 }
 
-// ---------------------------------------------------------------------------
-// loop(): runs forever
-// ---------------------------------------------------------------------------
 void loop()
-{
-  // Flip the boolean: "!" means NOT, so true becomes false and
-  // false becomes true. Each time loop() runs, the state swaps.
-  ledIsOn = !ledIsOn;
+{   
+    float voltage;
+    int sensor_value = analogRead(ROTARY_ANGLE_SENSOR);
+    voltage = (float)sensor_value*ADC_REF/1023;
+    float degrees = (voltage*FULL_ANGLE)/GROVE_VCC;
+    Serial.println("The angle between the mark and the starting position:");
+    Serial.println(degrees);
 
-  // Use the boolean to decide what to do.
-  if (ledIsOn)
-  {
-    digitalWrite(ledPin, HIGH); // HIGH = 5V on the pin -> LED on
-    Serial.println("LED is ON");
-  }
-  else
-  {
-    digitalWrite(ledPin, LOW); // LOW = 0V on the pin -> LED off
-    Serial.println("LED is OFF");
-  }
+    int brightness;
+    brightness = map(degrees, 0, FULL_ANGLE, 0, 255);
 
-  // Wait blinkDelay milliseconds before loop() runs again.
-  delay(blinkDelay);
+    if (degrees > 50 && degrees <= 300)
+    {
+        analogWrite(LED, brightness);
+    }
+    else
+    {
+        digitalWrite(LED, LOW);
+    }
+
+    delay(500);
 }
